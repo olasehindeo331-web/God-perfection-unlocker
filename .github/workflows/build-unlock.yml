@@ -120,7 +120,7 @@ jobs:
                 (Icons.build, 'Phone Diagnostics', 'Run and save a hardware inspection checklist', const DiagnosticsPage()),
                 (Icons.history, 'Repair History', 'Create, view and manage repair records', const RepairsPage()),
                 (Icons.devices, 'Device Manager', 'Register and search customer devices', const DevicesPage()),
-(Icons.support_agent, 'Phone Brand Support', 'Official support for Samsung, Tecno, Infinix, itel, Xiaomi and OPPO', const BrandSupportPage()),
+                (Icons.support_agent, 'Phone Brand Support', 'Official support for Samsung, Tecno, Infinix, itel, Xiaomi and OPPO', const BrandSupportPage()),
               ];
               return Scaffold(
                 appBar: AppBar(title: const Text('GOD PERFECTION UNLOCKER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
