@@ -257,6 +257,50 @@ jobs:
           );
 
           class Store {
+class BrandSupportPage extends StatelessWidget {
+  const BrandSupportPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final brands = [
+      ['Samsung', 'https://www.samsung.com/africa_en/support/'],
+      ['Tecno', 'https://www.tecno-mobile.com/'],
+      ['Infinix', 'https://www.infinixmobility.com/'],
+      ['itel', 'https://www.itel-life.com/'],
+      ['Xiaomi', 'https://www.mi.com/global/support/'],
+      ['OPPO', 'https://support.oppo.com/'],
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('PHONE BRAND SUPPORT')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Select a phone brand to visit its official support website.',
+            style: TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          for (final brand in brands)
+            Card(
+              color: panel,
+              child: ListTile(
+                leading: const Icon(Icons.support_agent, color: gold),
+                title: Text(
+                  brand[0],
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text('Official support website'),
+                trailing: const Icon(Icons.open_in_new, color: gold),
+                onTap: () => openWeb(brand[1]),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
             static Future<List<Map<String, dynamic>>> get(String key) async {
               final p = await SharedPreferences.getInstance();
               final raw = p.getString(key);
