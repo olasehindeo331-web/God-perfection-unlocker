@@ -22,7 +22,8 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: Create complete Flutter project
+      - name: Create complete 
+Flutter project
         shell: bash
         run: |
           flutter create --org com.godperfection --project-name god_perfection_unlocker --platforms=android .
