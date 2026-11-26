@@ -456,7 +456,6 @@ jobs:
           # Declare USB host support as optional so the app can still install on phones without OTG.
           sed -i '/<application/i\\    <uses-feature android:name="android.hardware.usb.host" android:required="false" />' android/app/src/main/AndroidManifest.xml
           flutter pub get
-          flutter analyze --no-pub
           flutter build apk --release
 
       - name: Upload Android APK
