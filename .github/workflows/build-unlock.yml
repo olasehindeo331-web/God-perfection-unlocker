@@ -1,11 +1,11 @@
-name: Build GOD PERFECTION UNLOCKER
+name: Build GOD PERFECTION UNLOCK
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/android.yml"
+      - ".github/workflows/build-unlock.yml"
 
 permissions:
   contents: read
