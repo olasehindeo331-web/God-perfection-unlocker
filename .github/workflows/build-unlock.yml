@@ -256,7 +256,6 @@ jobs:
             ])),
           );
 
-          class Store {
 class BrandSupportPage extends StatelessWidget {
   const BrandSupportPage({super.key});
 
@@ -301,6 +300,7 @@ class BrandSupportPage extends StatelessWidget {
   }
 }
 
+class store {
             static Future<List<Map<String, dynamic>>> get(String key) async {
               final p = await SharedPreferences.getInstance();
               final raw = p.getString(key);
