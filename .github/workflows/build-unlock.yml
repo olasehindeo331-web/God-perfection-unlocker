@@ -340,4 +340,166 @@ jobs:
             );
           }
 
-          class DiagnosticsPage extends StatefulW
+          class DiagnosticsPage extends StatefulWidget {
+            const DiagnosticsPage({super.key});
+            @override State<DiagnosticsPage> createState() => _DiagnosticsPageState();
+          }
+          class _DiagnosticsPageState extends State<DiagnosticsPage> {
+            final checks = <String, bool>{
+              'Display / touch': false, 'Charging port': false, 'Battery condition': false,
+              'Speaker': false, 'Microphone': false, 'Front camera': false,
+              'Rear camera': false, 'Wi-Fi / Bluetooth': false, 'SIM / network': false,
+              'Buttons': false, 'Vibration': false,
+            };
+            @override Widget build(BuildContext context) => Scaffold(
+              appBar: AppBar(title: const Text('PHONE DIAGNOSTICS')),
+              body: ListView(padding: const EdgeInsets.all(16), children: [
+                const Text('Tick each item after physically testing it. These are technician-assisted checks, not automatic hardware measurements.', style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 12),
+                for (final entry in checks.entries)
+                  Card(color: panel, child: CheckboxListTile(
+                    activeColor: gold, checkColor: Colors.black,
+                    title: Text(entry.key), value: entry.value,
+                    onChanged: (v) => setState(() => checks[entry.key] = v ?? false),
+                  )),
+                const SizedBox(height: 10),
+                Text('${checks.values.where((v) => v).length} of ${checks.length} checks completed', textAlign: TextAlign.center, style: const TextStyle(color: gold, fontWeight: FontWeight.bold)),
+                ElevatedButton(onPressed: () => setState(() => checks.updateAll((k, v) => false)), child: const Text('RESET CHECKLIST')),
+              ]),
+            );
+          }
+          EOF
+
+          mkdir -p android/app/src/main/kotlin/com/godperfection/god_perfection_unlocker
+          cat > android/app/src/main/kotlin/com/godperfection/god_perfection_unlocker/MainActivity.kt <<'EOF'
+          package com.godperfection.god_perfection_unlocker
+
+          import android.app.PendingIntent
+          import android.content.Context
+          import android.content.Intent
+          import android.hardware.usb.UsbDevice
+          import android.hardware.usb.UsbManager
+          import android.os.Build
+          import io.flutter.embedding.android.FlutterActivity
+          import io.flutter.embedding.engine.FlutterEngine
+          import io.flutter.plugin.common.MethodChannel
+
+          class MainActivity : FlutterActivity() {
+              private val channel = "godperfection/usb"
+              private val permissionAction =
+                  "com.godperfection.god_perfection_unlocker.USB_PERMISSION"
+
+              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+
+                  MethodChannel(
+                      flutterEngine.dartExecutor.binaryMessenger,
+                      channel
+                  ).setMethodCallHandler { call, result ->
+                      val manager = getSystemService(Context.USB_SERVICE) as UsbManager
+
+                      when (call.method) {
+                          "getDevices" -> {
+                              val devices = manager.deviceList.values.map { device ->
+                                  mapOf(
+                                      "deviceId" to device.deviceId,
+                                      "deviceName" to device.deviceName,
+                                      "vendorId" to device.vendorId,
+                                      "productId" to device.productId,
+                                      "interfaceCount" to device.interfaceCount,
+                                      "permissionGranted" to manager.hasPermission(device)
+                                  )
+                              }
+                              result.success(devices)
+                          }
+
+                          "requestPermission" -> {
+                              val id = call.argument<Int>("deviceId")
+                              val device: UsbDevice? = manager.deviceList.values.firstOrNull {
+                                  it.deviceId == id
+                              }
+
+                              if (device == null) {
+                                  result.error("NOT_FOUND", "USB device is no longer connected", null)
+                              } else if (manager.hasPermission(device)) {
+                                  result.success("USB permission already granted")
+                              } else {
+                                  val intent = Intent(permissionAction).setPackage(packageName)
+                                  val flags = if (Build.VERSION.SDK_INT >= 31) {
+                                      PendingIntent.FLAG_MUTABLE
+                                  } else {
+                                      0
+                                  }
+                                  val pendingIntent = PendingIntent.getBroadcast(
+                                      this,
+                                      device.deviceId,
+                                      intent,
+                                      flags or PendingIntent.FLAG_UPDATE_CURRENT
+                                  )
+                                  manager.requestPermission(device, pendingIntent)
+                                  result.success(
+                                      "Android USB permission prompt requested. " +
+                                          "After responding, scan again to check permission."
+                                  )
+                              }
+                          }
+
+                          else -> result.notImplemented()
+                      }
+                  }
+              }
+          }
+          EOF
+
+          # Declare USB host support as optional so the app can still install on phones without OTG.
+          sed -i '/<application/i\\    <uses-feature android:name="android.hardware.usb.host" android:required="false" />' android/app/src/main/AndroidManifest.xml
+          flutter pub get
+          flutter analyze --no-pub
+          flutter build apk --release
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GOD-PERFECTION-UNLOCKER-Android-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload project source for Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: god-perfection-unlocker-source
+          path: |
+            lib/
+            pubspec.yaml
+            android/
+          retention-days: 3
+
+  windows:
+    runs-on: windows-latest
+    needs: prepare-and-android
+    steps:
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Download shared app source
+        uses: actions/download-artifact@v4
+        with:
+          name: god-perfection-unlocker-source
+          path: app
+      - name: Create Windows runner and build
+        shell: pwsh
+        run: |
+          Set-Location app
+          flutter create --org com.godperfection --project-name god_perfection_unlocker --platforms=windows .
+          flutter pub get
+          flutter build windows --release
+      - name: Upload Windows application
+        uses: actions/upload-artifact@v4
+        with:
+          name: GOD-PERFECTION-UNLOCKER-Windows
+          path: app/build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 14
