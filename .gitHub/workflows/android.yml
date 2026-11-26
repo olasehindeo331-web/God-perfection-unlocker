@@ -503,3 +503,4 @@ jobs:
           path: app/build/windows/x64/runner/Release/
           if-no-files-found: error
           retention-days: 14
+
