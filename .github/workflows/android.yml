@@ -1,391 +1,343 @@
-
-name: Build God Perfection Unlocker APK
+name: Build GOD PERFECTION UNLOCKER
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  prepare-and-android:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
-      - name: Create Flutter Android project
+      - name: Create complete Flutter project
+        shell: bash
         run: |
-          flutter create --platforms=android --org com.godperfection --project-name god_perfection_unlocker .
-
-      - name: Add USB host feature
-        run: |
-          sed -i '/<manifest /a\    <uses-feature android:name="android.hardware.usb.host" android:required="false" />' android/app/src/main/AndroidManifest.xml
-
-      - name: Add native USB detection
-        run: |
-          mkdir -p android/app/src/main/kotlin/com/godperfection/god_perfection_unlocker
-          cat > android/app/src/main/kotlin/com/godperfection/god_perfection_unlocker/MainActivity.kt <<'EOF'
-          package com.godperfection.god_perfection_unlocker
-
-          import android.app.PendingIntent
-          import android.content.BroadcastReceiver
-          import android.content.Context
-          import android.content.Intent
-          import android.content.IntentFilter
-          import android.hardware.usb.UsbManager
-          import android.os.Build
-          import android.os.Bundle
-          import io.flutter.embedding.android.FlutterActivity
-          import io.flutter.embedding.engine.FlutterEngine
-          import io.flutter.plugin.common.MethodChannel
-
-          class MainActivity : FlutterActivity() {
-              private val channelName = "godperfection/usb"
-              private val permissionAction = "com.godperfection.god_perfection_unlocker.USB_PERMISSION"
-              private lateinit var usbManager: UsbManager
-
-              private val usbReceiver = object : BroadcastReceiver() {
-                  override fun onReceive(context: Context, intent: Intent) {
-                      if (intent.action == permissionAction) {
-                          // Permission result is available when the app refreshes its device list.
-                      }
-                  }
-              }
-
-              override fun onCreate(savedInstanceState: Bundle?) {
-                  super.onCreate(savedInstanceState)
-                  usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
-
-                  val filter = IntentFilter(permissionAction)
-                  if (Build.VERSION.SDK_INT >= 33) {
-                      registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-                  } else {
-                      @Suppress("DEPRECATION")
-                      registerReceiver(usbReceiver, filter)
-                  }
-              }
-
-              override fun onDestroy() {
-                  try {
-                      unregisterReceiver(usbReceiver)
-                  } catch (_: Exception) {
-                  }
-                  super.onDestroy()
-              }
-
-              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-                  super.configureFlutterEngine(flutterEngine)
-
-                  MethodChannel(
-                      flutterEngine.dartExecutor.binaryMessenger,
-                      channelName
-                  ).setMethodCallHandler { call, result ->
-                      when (call.method) {
-                          "getDevices" -> result.success(getUsbDevices())
-
-                          "requestPermission" -> {
-                              val name = call.argument<String>("deviceName")
-                              val device = usbManager.deviceList.values
-                                  .firstOrNull { it.deviceName == name }
-
-                              if (device == null) {
-                                  result.error("NOT_FOUND", "USB device not found", null)
-                              } else if (usbManager.hasPermission(device)) {
-                                  result.success("Permission already granted")
-                              } else {
-                                  val intent = Intent(permissionAction).setPackage(packageName)
-                                  val pendingIntent = PendingIntent.getBroadcast(
-                                      this,
-                                      0,
-                                      intent,
-                                      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-                                  )
-                                  usbManager.requestPermission(device, pendingIntent)
-                                  result.success("Permission request sent")
-                              }
-                          }
-
-                          else -> result.notImplemented()
-                      }
-                  }
-              }
-
-              private fun getUsbDevices(): List<Map<String, Any>> {
-                  return usbManager.deviceList.values.map { device ->
-                      mapOf(
-                          "deviceName" to device.deviceName,
-                          "vendorId" to device.vendorId,
-                          "productId" to device.productId,
-                          "deviceClass" to device.deviceClass,
-                          "interfaceCount" to device.interfaceCount,
-                          "permissionGranted" to usbManager.hasPermission(device)
-                      )
-                  }
-              }
-          }
+          flutter create --org com.godperfection --project-name god_perfection_unlocker --platforms=android .
+          mkdir -p lib
+          cat > pubspec.yaml <<'EOF'
+          name: god_perfection_unlocker
+          description: GOD PERFECTION UNLOCKER phone service and repair management app.
+          publish_to: "none"
+          version: 1.0.0+1
+          environment:
+            sdk: ">=3.3.0 <4.0.0"
+          dependencies:
+            flutter:
+              sdk: flutter
+            shared_preferences: ^2.3.2
+            url_launcher: ^6.3.1
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            flutter_lints: ^4.0.0
+          flutter:
+            uses-material-design: true
           EOF
 
-      - name: Add Flutter application screen
-        run: |
           cat > lib/main.dart <<'EOF'
+          import 'dart:convert';
           import 'package:flutter/material.dart';
+          import 'package:shared_preferences/shared_preferences.dart';
+          import 'package:url_launcher/url_launcher.dart';
           import 'package:flutter/services.dart';
 
-          void main() {
-            runApp(const UnlockerApp());
+          const gold = Color(0xFFD4AF37);
+          const black = Color(0xFF101010);
+          const panel = Color(0xFF202020);
+          const usbChannel = MethodChannel('godperfection/usb');
+
+          Future<void> openWeb(String url) async {
+            final uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
           }
 
-          class UnlockerApp extends StatelessWidget {
-            const UnlockerApp({super.key});
+          void main() => runApp(const GodPerfectionApp());
 
+          class GodPerfectionApp extends StatelessWidget {
+            const GodPerfectionApp({super.key});
             @override
             Widget build(BuildContext context) {
               return MaterialApp(
+                title: 'GOD PERFECTION UNLOCKER',
                 debugShowCheckedModeBanner: false,
-                title: 'God Perfection Unlocker',
-                theme: ThemeData.dark().copyWith(
-                  scaffoldBackgroundColor: const Color(0xFF101010),
+                theme: ThemeData(
+                  brightness: Brightness.dark,
+                  scaffoldBackgroundColor: black,
                   colorScheme: const ColorScheme.dark(
-                    primary: Color(0xFFD4AF37),
+                    primary: gold, secondary: gold, surface: panel,
                   ),
-                ),
-                home: const UsbHomePage(),
-              );
-            }
-          }
-
-          class UsbHomePage extends StatefulWidget {
-            const UsbHomePage({super.key});
-
-            @override
-            State<UsbHomePage> createState() => _UsbHomePageState();
-          }
-
-          class _UsbHomePageState extends State<UsbHomePage> {
-            static const usbChannel = MethodChannel('godperfection/usb');
-
-            List<Map<String, dynamic>> devices = [];
-            String message = 'Connect a phone or USB device using OTG.';
-            bool loading = false;
-
-            Future<void> scanDevices() async {
-              setState(() {
-                loading = true;
-                message = 'Checking USB connection...';
-              });
-
-              try {
-                final result = await usbChannel.invokeMethod<List<dynamic>>(
-                  'getDevices',
-                );
-
-                final found = (result ?? []).map((item) =>
-                    Map<String, dynamic>.from(item as Map)).toList();
-
-                setState(() {
-                  devices = found;
-                  message = found.isEmpty
-                      ? 'No USB devices detected. Check your OTG connection and cable.'
-                      : 'Found ${found.length} USB device(s).';
-                });
-              } on PlatformException catch (e) {
-                setState(() {
-                  message = 'USB error: ${e.message}';
-                });
-              } catch (e) {
-                setState(() {
-                  message = 'Could not scan USB devices: $e';
-                });
-              }
-
-              setState(() {
-                loading = false;
-              });
-            }
-
-            Future<void> requestDevicePermission(
-                Map<String, dynamic> device) async {
-              try {
-                final response = await usbChannel.invokeMethod<String>(
-                  'requestPermission',
-                  {'deviceName': device['deviceName']},
-                );
-
-                setState(() {
-                  message = response ?? 'Permission request sent.';
-                });
-              } on PlatformException catch (e) {
-                setState(() {
-                  message = 'Permission error: ${e.message}';
-                });
-              }
-            }
-
-            Widget serviceCard(IconData icon, String title, String detail) {
-              return Card(
-                color: const Color(0xFF202020),
-                child: ListTile(
-                  leading: Icon(icon, color: const Color(0xFFD4AF37), size: 30),
-                  title: Text(title),
-                  subtitle: Text(detail),
-                ),
-              );
-            }
-
-            @override
-            Widget build(BuildContext context) {
-              return Scaffold(
-                appBar: AppBar(
-                  backgroundColor: Colors.black,
-                  title: const Text(
-                    'GOD PERFECTION UNLOCKER',
-                    style: TextStyle(
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.bold,
+                  appBarTheme: const AppBarTheme(
+                    backgroundColor: Colors.black,
+                    foregroundColor: gold,
+                    centerTitle: true,
+                  ),
+                  inputDecorationTheme: InputDecorationTheme(
+                    filled: true, fillColor: panel,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
                   ),
+                  elevatedButtonTheme: ElevatedButtonThemeData(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: gold, foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                    ),
+                  ),
+                  useMaterial3: true,
                 ),
+                home: const HomePage(),
+              );
+            }
+          }
+
+          class HomePage extends StatelessWidget {
+            const HomePage({super.key});
+            void go(BuildContext context, Widget page) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+            }
+            @override
+            Widget build(BuildContext context) {
+              final items = <(IconData, String, String, Widget)>[
+                (Icons.usb, 'USB Device Manager', 'Scan compatible USB / OTG devices', const UsbPage()),
+                (Icons.phone_android, 'Android Services', 'Authorized Android recovery and software support', const AndroidPage()),
+                (Icons.phone_iphone, 'iPhone Services', 'Apple-supported recovery information', const IphonePage()),
+                (Icons.build, 'Phone Diagnostics', 'Run and save a hardware inspection checklist', const DiagnosticsPage()),
+                (Icons.history, 'Repair History', 'Create, view and manage repair records', const RepairsPage()),
+                (Icons.devices, 'Device Manager', 'Register and search customer devices', const DevicesPage()),
+              ];
+              return Scaffold(
+                appBar: AppBar(title: const Text('GOD PERFECTION UNLOCKER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
                 body: ListView(
                   padding: const EdgeInsets.all(18),
                   children: [
-                    const Icon(
-                      Icons.phonelink_setup,
-                      color: Color(0xFFD4AF37),
-                      size: 76,
-                    ),
-                    const Center(
-                      child: Text(
-                        'PROFESSIONAL PHONE SERVICING',
-                        style: TextStyle(
-                          color: Color(0xFFD4AF37),
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 12),
+                    const Icon(Icons.settings_cell, color: gold, size: 82),
+                    const SizedBox(height: 8),
+                    const Text('Professional Phone Servicing', textAlign: TextAlign.center,
+                      style: TextStyle(color: gold, fontWeight: FontWeight.bold, fontSize: 22)),
                     const SizedBox(height: 22),
-                    const Text(
-                      'USB DEVICE MANAGER',
-                      style: TextStyle(
-                        color: Color(0xFFD4AF37),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Card(
-                      color: const Color(0xFF202020),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(message),
-                            const SizedBox(height: 14),
-                            ElevatedButton.icon(
-                              onPressed: loading ? null : scanDevices,
-                              icon: const Icon(Icons.usb),
-                              label: Text(
-                                loading ? 'SCANNING...' : 'SCAN USB DEVICES',
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD4AF37),
-                                foregroundColor: Colors.black,
-                              ),
-                            ),
-                          ],
+                    for (final item in items)
+                      Card(
+                        color: panel,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          leading: Icon(item.$1, color: gold, size: 32),
+                          title: Text(item.$2, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Padding(padding: const EdgeInsets.only(top: 5), child: Text(item.$3)),
+                          trailing: const Icon(Icons.chevron_right, color: gold),
+                          onTap: () => go(context, item.$4),
                         ),
                       ),
-                    ),
-                    if (devices.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      const Text(
-                        'DETECTED DEVICES',
-                        style: TextStyle(
-                          color: Color(0xFFD4AF37),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      for (final device in devices)
-                        Card(
-                          color: const Color(0xFF202020),
-                          child: Padding(
-                            padding: const EdgeInsets.all(14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  device['deviceName'].toString(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text('Vendor ID: ${device['vendorId']}'),
-                                Text('Product ID: ${device['productId']}'),
-                                Text('USB class: ${device['deviceClass']}'),
-                                Text('Interfaces: ${device['interfaceCount']}'),
-                                Text(
-                                  'Permission: ${device['permissionGranted'] == true ? 'Granted' : 'Not granted'}',
-                                ),
-                                const SizedBox(height: 8),
-                                OutlinedButton(
-                                  onPressed: () => requestDevicePermission(device),
-                                  child: const Text('REQUEST USB PERMISSION'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
+                    const SizedBox(height: 16),
+                    const Text('GOD PERFECTION TECH', textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white54, letterSpacing: 1.4)),
                     const SizedBox(height: 20),
-                    const Text(
-                      'OTHER SERVICING MODULES',
-                      style: TextStyle(
-                        color: Color(0xFFD4AF37),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    serviceCard(Icons.android, 'Android Services',
-                        'Authorized recovery and supported software repair.'),
-                    serviceCard(Icons.apple, 'iPhone Services',
-                        'Official diagnostics and recovery support.'),
-                    serviceCard(Icons.build, 'Phone Diagnostics',
-                        'Device testing and repair assistance.'),
-                    serviceCard(Icons.history, 'Repair History',
-                        'Repair records will be added in a later update.'),
-                    const SizedBox(height: 20),
-                    const Center(
-                      child: Text(
-                        'GOD PERFECTION TECH',
-                        style: TextStyle(color: Colors.white54),
-                      ),
-                    ),
                   ],
                 ),
               );
             }
           }
-          EOF
 
-      - name: Build release APK
-        run: flutter build apk --release
+          class UsbPage extends StatefulWidget {
+            const UsbPage({super.key});
+            @override State<UsbPage> createState() => _UsbPageState();
+          }
+          class _UsbPageState extends State<UsbPage> {
+            bool busy = false;
+            String message = 'Connect a compatible USB device using an OTG adapter, then scan.';
+            List<dynamic> devices = [];
+            Future<void> scan() async {
+              setState(() { busy = true; message = 'Scanning USB host devices...'; });
+              try {
+                final result = await usbChannel.invokeMethod<List<dynamic>>('getDevices');
+                devices = result ?? [];
+                message = devices.isEmpty
+                  ? 'No USB host devices detected. Check OTG support, cable and connection.'
+                  : 'Found ${devices.length} USB device(s).';
+              } on PlatformException catch (e) {
+                message = 'USB scan error: ${e.message ?? e.code}';
+              } on MissingPluginException {
+                message = 'USB scanning is unavailable on this platform or build.';
+              } catch (e) { message = 'Could not scan USB: $e'; }
+              if (mounted) setState(() => busy = false);
+            }
+            Future<void> request(dynamic device) async {
+              try {
+                final result = await usbChannel.invokeMethod<String>('requestPermission', {'deviceId': device['deviceId']});
+                if (mounted) setState(() => message = result ?? 'Permission request sent. Scan again to check access.');
+              } catch (e) { if (mounted) setState(() => message = 'Permission request failed: $e'); }
+            }
+            @override Widget build(BuildContext context) => Scaffold(
+              appBar: AppBar(title: const Text('USB DEVICE MANAGER')),
+              body: ListView(padding: const EdgeInsets.all(16), children: [
+                const Icon(Icons.usb, color: gold, size: 64),
+                Text(message, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(onPressed: busy ? null : scan, icon: const Icon(Icons.search), label: Text(busy ? 'SCANNING...' : 'SCAN USB DEVICES')),
+                const SizedBox(height: 12),
+                for (final d in devices)
+                  Card(color: panel, child: ListTile(
+                    title: Text('${d['deviceName'] ?? 'USB device'}'),
+                    subtitle: Text('Vendor ID: ${d['vendorId']}  •  Product ID: ${d['productId']}\\nInterfaces: ${d['interfaceCount']}  •  Permission: ${d['permissionGranted']}'),
+                    isThreeLine: true,
+                    trailing: IconButton(icon: const Icon(Icons.lock_open, color: gold), onPressed: () => request(d)),
+                  )),
+                const SizedBox(height: 12),
+                const Text('Note: Android phones connected to this handset are not guaranteed to appear as USB host devices. USB detection is not the same as unlocking a phone. ADB or manufacturer-authorized tools may be required.', style: TextStyle(color: Colors.white70)),
+              ]),
+            );
+          }
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: God-Perfection-Unlocker-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          class AndroidPage extends StatelessWidget {
+            const AndroidPage({super.key});
+            @override Widget build(BuildContext context) => Scaffold(
+              appBar: AppBar(title: const Text('ANDROID SERVICES')),
+              body: ListView(padding: const EdgeInsets.all(16), children: [
+                const Text('Choose the procedure that matches the device and its ownership status. These are support guides, not universal lock-removal tools.', style: TextStyle(fontSize: 16)),
+                const SizedBox(height: 14),
+                infoCard(Icons.account_circle, 'Google account / FRP recovery',
+                  'For the rightful owner: recover the Google account at accounts.google.com/signin/recovery. After a factory reset, sign in with an account previously synced to the phone. Proof of purchase may be required by the manufacturer or seller.',
+                  'https://accounts.google.com/signin/recovery'),
+                infoCard(Icons.lock_reset, 'Screen lock recovery',
+                  'Use the manufacturer’s official recovery options. A factory reset can erase user data and may still require the previously synced Google account. This app does not bypass screen locks.'),
+                infoCard(Icons.system_update, 'Firmware and software repair',
+                  'Identify the exact model and region before downloading firmware. Use manufacturer service software or an authorized service centre. Incorrect firmware can make a device unusable.'),
+                infoCard(Icons.sim_card, 'SIM / network unlock',
+                  'Carrier or network unlocking must be requested from the original carrier and is subject to its eligibility rules. This app cannot generate carrier unlock codes.'),
+                infoCard(Icons.developer_board, 'Bootloader and ADB',
+                  'Use ADB only after enabling USB debugging on a device you own or are authorized to service, and approve its computer authorization prompt. Bootloader unlocking may erase data and is model-specific.'),
+              ]),
+            );
+          }
+
+          class IphonePage extends StatelessWidget {
+            const IphonePage({super.key});
+            @override Widget build(BuildContext context) => Scaffold(
+              appBar: AppBar(title: const Text('IPHONE SERVICES')),
+              body: ListView(padding: const EdgeInsets.all(16), children: [
+                const Icon(Icons.phone_iphone, color: gold, size: 62),
+                infoCard(Icons.backup, 'Update or restore iPhone',
+                  'Use Finder on a Mac or Apple Devices / iTunes on a compatible Windows PC. Back up first when possible. Recovery-mode restore can erase the iPhone.',
+                  'https://support.apple.com/iphone/restore'),
+                infoCard(Icons.key, 'Apple Account recovery',
+                  'The owner should use Apple’s official account recovery process. This app cannot remove Activation Lock.',
+                  'https://iforgot.apple.com/'),
+                infoCard(Icons.build_circle, 'Hardware diagnostics and repair',
+                  'Check Apple Support and an Apple Authorized Service Provider for model-specific diagnostics and repair options.',
+                  'https://support.apple.com/repair'),
+              ]),
+            );
+          }
+
+          Widget infoCard(IconData icon, String title, String body, [String? url]) => Card(
+            color: panel, margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Icon(icon, color: gold), const SizedBox(width: 10), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))]),
+              const SizedBox(height: 10), Text(body),
+              if (url != null) Align(alignment: Alignment.centerRight, child: TextButton(onPressed: () => openWeb(url), child: const Text('OPEN OFFICIAL SUPPORT PAGE'))),
+            ])),
+          );
+
+          class Store {
+            static Future<List<Map<String, dynamic>>> get(String key) async {
+              final p = await SharedPreferences.getInstance();
+              final raw = p.getString(key);
+              if (raw == null) return [];
+              try { return (jsonDecode(raw) as List).cast<Map<String, dynamic>>(); } catch (_) { return []; }
+            }
+            static Future<void> put(String key, List<Map<String, dynamic>> data) async {
+              final p = await SharedPreferences.getInstance();
+              await p.setString(key, jsonEncode(data));
+            }
+          }
+
+          class DevicesPage extends StatefulWidget {
+            const DevicesPage({super.key});
+            @override State<DevicesPage> createState() => _DevicesPageState();
+          }
+          class _DevicesPageState extends State<DevicesPage> {
+            List<Map<String, dynamic>> rows = [];
+            final name = TextEditingController(), phone = TextEditingController(), model = TextEditingController();
+            @override void initState() { super.initState(); load(); }
+            Future<void> load() async { rows = await Store.get('devices'); if (mounted) setState(() {}); }
+            Future<void> add() async {
+              if (name.text.trim().isEmpty || model.text.trim().isEmpty) return;
+              rows.add({'name': name.text.trim(), 'phone': phone.text.trim(), 'model': model.text.trim(), 'date': DateTime.now().toIso8601String()});
+              await Store.put('devices', rows);
+              name.clear(); phone.clear(); model.clear(); if (mounted) setState(() {});
+            }
+            @override Widget build(BuildContext context) => Scaffold(
+              appBar: AppBar(title: const Text('DEVICE MANAGER')),
+              body: ListView(padding: const EdgeInsets.all(16), children: [
+                TextField(controller: name, decoration: const InputDecoration(labelText: 'Customer name')),
+                const SizedBox(height: 10), TextField(controller: phone, decoration: const InputDecoration(labelText: 'Customer phone')),
+                const SizedBox(height: 10), TextField(controller: model, decoration: const InputDecoration(labelText: 'Phone brand and model')),
+                const SizedBox(height: 12), ElevatedButton(onPressed: add, child: const Text('SAVE DEVICE')),
+                const Divider(height: 28),
+                for (int i = 0; i < rows.length; i++) Card(color: panel, child: ListTile(
+                  title: Text(rows[i]['model'] ?? ''), subtitle: Text('${rows[i]['name']} • ${rows[i]['phone']}'),
+                  trailing: IconButton(icon: const Icon(Icons.delete_outline, color: gold), onPressed: () async { rows.removeAt(i); await Store.put('devices', rows); setState(() {}); }),
+                )),
+              ]),
+            );
+          }
+
+          class RepairsPage extends StatefulWidget {
+            const RepairsPage({super.key});
+            @override State<RepairsPage> createState() => _RepairsPageState();
+          }
+          class _RepairsPageState extends State<RepairsPage> {
+            List<Map<String, dynamic>> rows = [];
+            final customer = TextEditingController(), device = TextEditingController(), issue = TextEditingController(), cost = TextEditingController();
+            @override void initState() { super.initState(); load(); }
+            Future<void> load() async { rows = await Store.get('repairs'); if (mounted) setState(() {}); }
+            Future<void> add() async {
+              if (customer.text.trim().isEmpty || device.text.trim().isEmpty || issue.text.trim().isEmpty) return;
+              rows.insert(0, {'customer': customer.text.trim(), 'device': device.text.trim(), 'issue': issue.text.trim(), 'cost': cost.text.trim(), 'status': 'Received', 'date': DateTime.now().toIso8601String()});
+              await Store.put('repairs', rows);
+              customer.clear(); device.clear(); issue.clear(); cost.clear(); if (mounted) setState(() {});
+            }
+            Future<void> updateStatus(int i) async {
+              const states = ['Received', 'Diagnosing', 'In progress', 'Ready', 'Collected'];
+              final current = states.indexOf(rows[i]['status'] ?? 'Received');
+              rows[i]['status'] = states[(current + 1) % states.length];
+              await Store.put('repairs', rows); if (mounted) setState(() {});
+            }
+            @override Widget build(BuildContext context) => Scaffold(
+              appBar: AppBar(title: const Text('REPAIR HISTORY')),
+              body: ListView(padding: const EdgeInsets.all(16), children: [
+                TextField(controller: customer, decoration: const InputDecoration(labelText: 'Customer name')),
+                const SizedBox(height: 10), TextField(controller: device, decoration: const InputDecoration(labelText: 'Phone brand and model')),
+                const SizedBox(height: 10), TextField(controller: issue, decoration: const InputDecoration(labelText: 'Fault / repair performed')),
+                const SizedBox(height: 10), TextField(controller: cost, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Repair cost (optional)')),
+                const SizedBox(height: 12), ElevatedButton(onPressed: add, child: const Text('SAVE REPAIR RECORD')),
+                const Divider(height: 28),
+                if (rows.isEmpty) const Text('No repair records saved yet.'),
+                for (int i = 0; i < rows.length; i++) Card(color: panel, child: ListTile(
+                  title: Text('${rows[i]['device']} — ${rows[i]['status']}'),
+                  subtitle: Text('${rows[i]['customer']}\\n${rows[i]['issue']}\\nCost: ${rows[i]['cost'] ?? ''}'),
+                  isThreeLine: true,
+                  onTap: () => updateStatus(i),
+                  trailing: IconButton(icon: const Icon(Icons.delete_outline, color: gold), onPressed: () async { rows.removeAt(i); await Store.put('repairs', rows); setState(() {}); }),
+                )),
+                const Text('Tap a repair record to advance its status: Received → Diagnosing → In progress → Ready → Collected.', style: TextStyle(color: Colors.white70)),
+              ]),
+            );
+          }
+
+          class DiagnosticsPage extends StatefulW
