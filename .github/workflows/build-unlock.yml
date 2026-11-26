@@ -300,7 +300,7 @@ class BrandSupportPage extends StatelessWidget {
   }
 }
 
-class store {
+class Store {
             static Future<List<Map<String, dynamic>>> get(String key) async {
               final p = await SharedPreferences.getInstance();
               final raw = p.getString(key);
