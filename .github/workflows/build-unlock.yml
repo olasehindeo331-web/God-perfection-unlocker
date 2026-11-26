@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-    prepare-and-android:
+  prepare-and-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,8 +22,7 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: Create complete 
-Flutter project
+      - name: Create complete Flutter project
         shell: bash
         run: |
           flutter create --org com.godperfection --project-name god_perfection_unlocker --platforms=android .
