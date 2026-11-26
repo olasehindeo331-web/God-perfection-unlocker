@@ -1,0 +1,540 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>God Perfection Unlocker 3.0</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#090909;color:#fff;
+ font-family:Arial,sans-serif;
+}
+header{
+ background:#111;padding:20px 15px;
+ border-bottom:2px solid #d4af37;
+ position:sticky;top:0;z-index:10;
+}
+.logo{color:#d4af37;font-size:21px;font-weight:bold}
+.sub{color:#aaa;font-size:11px;margin-top:6px}
+nav{
+ display:flex;overflow-x:auto;gap:7px;
+ background:#171717;padding:10px;
+ position:sticky;top:76px;z-index:9;
+}
+button{
+ background:#d4af37;color:#111;
+ border:0;border-radius:8px;
+ padding:12px;font-weight:bold;
+ cursor:pointer;
+}
+nav button{
+ background:#292929;color:#d4af37;
+ border:1px solid #69551e;
+ white-space:nowrap;
+}
+main{padding:15px;max-width:850px;margin:auto}
+.page{display:none}
+.page.active{display:block}
+.panel{
+ background:#181818;border:1px solid #705b23;
+ border-radius:13px;padding:16px;margin-bottom:15px;
+}
+h2,h3{color:#d4af37}
+.muted{color:#aaa;font-size:13px;line-height:1.6}
+.grid{
+ display:grid;grid-template-columns:1fr 1fr;gap:11px;
+}
+.tool{
+ background:#181818;border:1px solid #705b23;
+ padding:17px 10px;border-radius:12px;
+ text-align:center;cursor:pointer;min-height:115px;
+}
+.tool:active{background:#302817}
+.emoji{font-size:26px}
+.tool b{display:block;margin:9px 0}
+.tool small{color:#aaa}
+.full{width:100%;margin-top:9px}
+input,select,textarea{
+ display:block;width:100%;padding:13px;
+ margin:8px 0 14px;background:#101010;
+ border:1px solid #66531f;color:white;
+ border-radius:8px;
+}
+label{color:#d4af37;font-size:13px}
+.record{
+ background:#222;border-left:3px solid #d4af37;
+ padding:13px;border-radius:7px;margin:10px 0;
+}
+.record p{font-size:13px;color:#bbb}
+.record button{margin:4px 3px 0 0}
+.result{color:#e5c45b;white-space:pre-wrap;line-height:1.6}
+.check{padding:10px;background:#222;border-radius:7px;margin:7px 0}
+.check input{display:inline;width:auto;margin-right:9px}
+footer{text-align:center;padding:25px;color:#777;font-size:11px}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="logo">GOD PERFECTION UNLOCKER</div>
+ <div class="sub">PROFESSIONAL PHONE SERVICING PLATFORM</div>
+</header>
+
+<nav>
+ <button onclick="page('home')">Home</button>
+ <button onclick="page('devices')">Devices</button>
+ <button onclick="page('history')">History</button>
+ <button onclick="page('diagnostics')">Diagnostics</button>
+ <button onclick="page('services')">Services</button>
+ <button onclick="page('settings')">Settings</button>
+</nav>
+
+<main>
+
+<!-- HOME -->
+<section id="home" class="page active">
+ <div class="panel">
+  <h2>Welcome Back!</h2>
+  <p>God Perfection Unlocker Version 3.0</p>
+  <p class="muted">Your phone engineering workstation.</p>
+  <div class="grid">
+   <div>
+    <p class="muted">Saved Devices</p>
+    <h2 id="deviceCount">0</h2>
+   </div>
+   <div>
+    <p class="muted">Repair Records</p>
+    <h2 id="repairCount">0</h2>
+   </div>
+  </div>
+ </div>
+
+ <h3>QUICK ACCESS</h3>
+ <div class="grid">
+  <div class="tool" onclick="page('devices')">
+   <div class="emoji">📱</div>
+   <b>Device Manager</b>
+   <small>Save phone information</small>
+  </div>
+  <div class="tool" onclick="page('history')">
+   <div class="emoji">📋</div>
+   <b>Repair History</b>
+   <small>View repair records</small>
+  </div>
+  <div class="tool" onclick="page('diagnostics')">
+   <div class="emoji">🔍</div>
+   <b>Diagnostics</b>
+   <small>Phone troubleshooting</small>
+  </div>
+  <div class="tool" onclick="page('services')">
+   <div class="emoji">🔧</div>
+   <b>Phone Services</b>
+   <small>Available service guides</small>
+  </div>
+ </div>
+
+ <h3>USB CONNECTION</h3>
+ <div class="panel">
+  <p id="usbStatus">USB: Native connection not configured.</p>
+  <p class="muted">USB hardware communication will be added in a later native Android development stage.</p>
+ </div>
+</section>
+
+<!-- DEVICES -->
+<section id="devices" class="page">
+ <h2>Device Manager</h2>
+ <div class="panel">
+  <h3>Register New Phone</h3>
+
+  <label>Phone Brand</label>
+  <input id="brand" placeholder="e.g. Tecno">
+
+  <label>Phone Model</label>
+  <input id="model" placeholder="e.g. Camon 30">
+
+  <label>Device Type</label>
+  <select id="type">
+   <option>Android</option>
+   <option>iPhone</option>
+  </select>
+
+  <label>Software Version</label>
+  <input id="version" placeholder="e.g. Android 14">
+
+  <label>IMEI / Serial Number (optional)</label>
+  <input id="imei" placeholder="Enter only if authorized">
+
+  <label>Customer Name (optional)</label>
+  <input id="customer" placeholder="Customer name">
+
+  <label>Phone Problem</label>
+  <textarea id="problem" placeholder="Describe the problem"></textarea>
+
+  <button class="full" onclick="saveDevice()">SAVE DEVICE</button>
+  <p id="deviceMessage" class="result"></p>
+ </div>
+
+ <h3>SAVED DEVICES</h3>
+ <input id="deviceSearch" placeholder="Search saved devices..." oninput="renderDevices()">
+ <div id="deviceList"></div>
+</section>
+
+<!-- HISTORY -->
+<section id="history" class="page">
+ <h2>Repair History</h2>
+ <div class="panel">
+  <h3>Add Repair Record</h3>
+
+  <label>Phone Model</label>
+  <input id="repairModel" placeholder="Phone model">
+
+  <label>Repair Service</label>
+  <select id="repairService">
+   <option>Screen Replacement</option>
+   <option>Battery Replacement</option>
+   <option>Charging Port Repair</option>
+   <option>Software Repair</option>
+   <option>Firmware Recovery</option>
+   <option>Network Support</option>
+   <option>Other Repair</option>
+  </select>
+
+  <label>Repair Status</label>
+  <select id="repairStatus">
+   <option>Received</option>
+   <option>Under Repair</option>
+   <option>Completed</option>
+   <option>Not Repaired</option>
+  </select>
+
+  <label>Repair Notes</label>
+  <textarea id="repairNotes" placeholder="Describe the work done"></textarea>
+
+  <button class="full" onclick="saveRepair()">SAVE REPAIR RECORD</button>
+ </div>
+
+ <h3>PREVIOUS REPAIRS</h3>
+ <div id="historyList"></div>
+</section>
+
+<!-- DIAGNOSTICS -->
+<section id="diagnostics" class="page">
+ <h2>Phone Diagnostics</h2>
+ <p class="muted">Use these manual checks to examine a customer's phone.</p>
+
+ <div class="panel">
+  <h3>Hardware Checklist</h3>
+
+  <div class="check"><label><input type="checkbox"> Screen and touch</label></div>
+  <div class="check"><label><input type="checkbox"> Battery condition</label></div>
+  <div class="check"><label><input type="checkbox"> Charging port</label></div>
+  <div class="check"><label><input type="checkbox"> Front camera</label></div>
+  <div class="check"><label><input type="checkbox"> Rear camera</label></div>
+  <div class="check"><label><input type="checkbox"> Loudspeaker</label></div>
+  <div class="check"><label><input type="checkbox"> Microphone</label></div>
+  <div class="check"><label><input type="checkbox"> Network signal</label></div>
+  <div class="check"><label><input type="checkbox"> Wi-Fi and Bluetooth</label></div>
+  <div class="check"><label><input type="checkbox"> Fingerprint sensor</label></div>
+
+  <button class="full" onclick="diagnosticResult()">CHECK COMPLETED ITEMS</button>
+  <p id="diagnosticResult" class="result"></p>
+  <button class="full" onclick="resetChecks()">RESET CHECKLIST</button>
+ </div>
+
+ <div class="panel">
+  <h3>Important</h3>
+  <p class="muted">These are manual inspection checklists. They do not automatically test the phone hardware yet.</p>
+ </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services" class="page">
+ <h2>Phone Servicing Tools</h2>
+ <div class="grid">
+  <div class="tool" onclick="guide('FRP Recovery','Use the official Google account recovery process for the rightful owner.')">🔐<b>FRP Recovery</b><small>Account recovery</small></div>
+  <div class="tool" onclick="guide('Firmware Repair','Check the exact model and official firmware before performing a software repair.')">⚙️<b>Firmware Repair</b><small>Software support</small></div>
+  <div class="tool" onclick="guide('Network Unlock','Contact the carrier to check SIM unlock eligibility.')">📶<b>Network Unlock</b><small>Carrier support</small></div>
+  <div class="tool" onclick="guide('Bootloader','Check official manufacturer instructions and understand that unlocking may erase data.')">🔧<b>Bootloader</b><small>Supported devices</small></div>
+  <div class="tool" onclick="guide('Screen Lock Recovery','Use the official owner recovery procedure. Some reset procedures erase device data.')">🔓<b>Screen Lock</b><small>Authorized recovery</small></div>
+  <div class="tool" onclick="guide('iPhone Recovery','Use Apple-supported recovery and account procedures.')">🍎<b>iPhone Recovery</b><small>Apple support</small></div>
+ </div>
+ <div class="panel">
+  <h3>Supported Brands</h3>
+  <p>TECNO · INFINIX · ITEL · SAMSUNG</p>
+  <p>XIAOMI · OPPO · VIVO · REALME · APPLE</p>
+ </div>
+</section>
+
+<!-- GUIDE -->
+<section id="guide" class="page">
+ <h2 id="guideTitle">Service Guide</h2>
+ <div class="panel">
+  <p id="guideText" class="muted"></p>
+  <button class="full" onclick="page('devices')">REGISTER A DEVICE</button>
+  <button class="full" onclick="page('services')">BACK TO SERVICES</button>
+ </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="settings" class="page">
+ <h2>Settings</h2>
+ <div class="panel">
+  <h3>Application Details</h3>
+  <p>God Perfection Unlocker</p>
+  <p>Version 3.0</p>
+  <p>Black and Gold Edition</p>
+  <p>Android and Windows development project</p>
+ </div>
+
+ <div class="panel">
+  <h3>Data Backup</h3>
+  <p class="muted">Download your saved device and repair records.</p>
+  <button class="full" onclick="exportData()">EXPORT BACKUP</button>
+  <button class="full" onclick="clearData()">CLEAR ALL SAVED RECORDS</button>
+ </div>
+
+ <div class="panel">
+  <h3>About</h3>
+  <p class="muted">A phone engineering and diagnostic management platform by God Perfection Tech.</p>
+ </div>
+</section>
+
+</main>
+
+<footer>
+ GOD PERFECTION UNLOCKER<br>
+ Version 3.0 · Phone Engineering
+</footer>
+
+<script>
+const KEY="gpt_unlocker_v3";
+
+function loadData(){
+ try{
+  return JSON.parse(localStorage.getItem(KEY)) ||
+  {devices:[],repairs:[]};
+ }catch(e){
+  return {devices:[],repairs:[]};
+ }
+}
+
+let data=loadData();
+
+function saveData(){
+ try{
+  localStorage.setItem(KEY,JSON.stringify(data));
+ }catch(e){
+  alert("Storage unavailable. Please export your records.");
+ }
+ updateCounts();
+}
+
+function page(id){
+ document.querySelectorAll(".page").forEach(p=>{
+  p.classList.remove("active");
+ });
+ document.getElementById(id).classList.add("active");
+ window.scrollTo(0,0);
+ renderDevices();
+ renderHistory();
+ updateCounts();
+}
+
+function updateCounts(){
+ document.getElementById("deviceCount").textContent=data.devices.length;
+ document.getElementById("repairCount").textContent=data.repairs.length;
+}
+
+function saveDevice(){
+ const brand=document.getElementById("brand").value.trim();
+ const model=document.getElementById("model").value.trim();
+
+ if(!brand||!model){
+  alert("Enter the phone brand and model.");
+  return;
+ }
+
+ data.devices.unshift({
+  id:Date.now(),
+  brand,
+  model,
+  type:document.getElementById("type").value,
+  version:document.getElementById("version").value,
+  imei:document.getElementById("imei").value,
+  customer:document.getElementById("customer").value,
+  problem:document.getElementById("problem").value,
+  date:new Date().toLocaleString()
+ });
+
+ saveData();
+
+ ["brand","model","version","imei","customer","problem"].forEach(id=>{
+  document.getElementById(id).value="";
+ });
+
+ document.getElementById("deviceMessage").textContent=
+ "Device saved successfully!";
+
+ renderDevices();
+}
+
+function renderDevices(){
+ const list=document.getElementById("deviceList");
+ if(!list)return;
+
+ const q=(document.getElementById("deviceSearch")?.value||"").toLowerCase();
+
+ const items=data.devices.filter(d=>
+  (d.brand+" "+d.model+" "+d.customer).toLowerCase().includes(q)
+ );
+
+ if(!items.length){
+  list.innerHTML='<p class="muted">No matching devices saved.</p>';
+  return;
+ }
+
+ list.innerHTML="";
+ items.forEach(d=>{
+  const card=document.createElement("div");
+  card.className="record";
+
+  const title=document.createElement("b");
+  title.textContent=d.brand+" "+d.model;
+
+  const details=document.createElement("p");
+  details.textContent=d.type+" | "+d.version+" | "+d.date;
+
+  const customer=document.createElement("p");
+  customer.textContent="Customer: "+(d.customer||"Not supplied");
+
+  const problem=document.createElement("p");
+  problem.textContent="Problem: "+(d.problem||"Not supplied");
+
+  const remove=document.createElement("button");
+  remove.textContent="DELETE";
+  remove.onclick=()=>deleteDevice(d.id);
+
+  card.append(title,details,customer,problem,remove);
+  list.appendChild(card);
+ });
+}
+
+function deleteDevice(id){
+ if(!confirm("Delete this device record?"))return;
+ data.devices=data.devices.filter(d=>d.id!==id);
+ saveData();
+ renderDevices();
+}
+
+function saveRepair(){
+ const model=document.getElementById("repairModel").value.trim();
+ if(!model){
+  alert("Enter the phone model.");
+  return;
+ }
+
+ data.repairs.unshift({
+  id:Date.now(),
+  model,
+  service:document.getElementById("repairService").value,
+  status:document.getElementById("repairStatus").value,
+  notes:document.getElementById("repairNotes").value,
+  date:new Date().toLocaleString()
+ });
+
+ saveData();
+ document.getElementById("repairModel").value="";
+ document.getElementById("repairNotes").value="";
+ renderHistory();
+ alert("Repair record saved!");
+}
+
+function renderHistory(){
+ const list=document.getElementById("historyList");
+ if(!list)return;
+ list.innerHTML="";
+
+ if(!data.repairs.length){
+  list.innerHTML='<p class="muted">No repair history yet.</p>';
+  return;
+ }
+
+ data.repairs.forEach(r=>{
+  const card=document.createElement("div");
+  card.className="record";
+
+  const title=document.createElement("b");
+  title.textContent=r.model+" - "+r.service;
+
+  const status=document.createElement("p");
+  status.textContent="Status: "+r.status;
+
+  const notes=document.createElement("p");
+  notes.textContent="Notes: "+r.notes;
+
+  const date=document.createElement("p");
+  date.textContent=r.date;
+
+  const remove=document.createElement("button");
+  remove.textContent="DELETE";
+  remove.onclick=()=>{
+   if(confirm("Delete this repair record?")){
+    data.repairs=data.repairs.filter(x=>x.id!==r.id);
+    saveData();
+    renderHistory();
+   }
+  };
+
+  card.append(title,status,notes,date,remove);
+  list.appendChild(card);
+ });
+}
+
+function diagnosticResult(){
+ const checks=[...document.querySelectorAll("#diagnostics input[type=checkbox]")];
+ const done=checks.filter(c=>c.checked).length;
+
+ document.getElementById("diagnosticResult").textContent=
+ done+" of "+checks.length+" inspection items marked complete.";
+}
+
+function resetChecks(){
+ document.querySelectorAll("#diagnostics input[type=checkbox]").forEach(c=>c.checked=false);
+ document.getElementById("diagnosticResult").textContent="";
+}
+
+function guide(title,description){
+ document.getElementById("guideTitle").textContent=title;
+ document.getElementById("guideText").textContent=description;
+ page("guide");
+}
+
+function exportData(){
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ a.href=url;
+ a.download="GodPerfection-Backup.json";
+ a.click();
+ URL.revokeObjectURL(url);
+}
+
+function clearData(){
+ if(!confirm("This will permanently clear all saved records. Have you exported a backup?"))return;
+ data={devices:[],repairs:[]};
+ saveData();
+ renderDevices();
+ renderHistory();
+ alert("Saved records cleared.");
+}
+
+updateCounts();
+renderDevices();
+renderHistory();
+</script>
+</body>
+</html>
