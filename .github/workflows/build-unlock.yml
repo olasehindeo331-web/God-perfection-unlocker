@@ -256,7 +256,7 @@ jobs:
             ])),
           );
 
-class BrandSupportPage extends StatelessWidget {
+          class BrandSupportPage extends StatelessWidget {
   const BrandSupportPage({super.key});
 
   @override
